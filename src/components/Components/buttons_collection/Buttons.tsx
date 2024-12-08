@@ -1,14 +1,17 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, ReactNode, useRef } from "react";
 import {
   SquareArrowOutUpRight,
   ThumbsDownIcon,
+  ThumbsUp,
   ThumbsUpIcon,
   X,
 } from "lucide-react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { QrCode } from "lucide-react";
+import { MdInfo } from "react-icons/md";
+import { HexColorPicker } from "react-colorful";
 import {
   Tooltip,
   TooltipContent,
@@ -24,11 +27,125 @@ import { LoaderCircle } from "lucide-react";
 import { useImageUpload } from "@/hooks/use-image-upload";
 import { CircleUserRound } from "lucide-react";
 import { Mail } from "lucide-react";
+import useOnClickOutside from "use-onclickoutside";
+// Component for rendering button code with copy and detail options
+const ButtonWithCopy: React.FC<{ code: string; coding: ReactNode }> = ({
+  code,
+  coding,
+}) => {
+  const [copied, setCopied] = useState(false);
+  const [_, _setIsExpanded7] = useState<boolean>(false);
+
+  // Handles copying code to clipboard
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="group flex flex-col items-center justify-center p-4 relative w-full h-32 text-center shadow-md hover:shadow-lg transition-shadow duration-300">
+      <div>{coding}</div>
+      <Dialog>
+        <TooltipProvider delayDuration={0}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DialogTrigger asChild>
+                <button
+                  className="absolute top-0 left-0 md:opacity-0 opacity-100 group-hover:opacity-100 py-3 px-5 mr-3 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-label="More Info"
+                >
+                  <MdInfo className="text-xl text-gray-700 group-hover:text-blue-500" />
+                </button>
+              </DialogTrigger>
+            </TooltipTrigger>
+            <TooltipContent
+              side="top"
+              align="center"
+              className="z-50 border border-input bg-popover px-2 py-1 text-xs text-muted-foreground"
+            >
+              Click for details
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <DialogContent className="flex flex-col gap-0 p-0 sm:max-h-[min(640px,80vh)] sm:max-w-lg [&>button:last-child]:hidden">
+          <div className="overflow-y-auto">
+            <DialogHeader className="contents space-y-0 text-left">
+              <DialogTitle className="px-6 pt-6 text-base flex items-center justify-center border-b-[1px] dark:border-white border-black">
+                <div className="mb-6">{coding}</div>
+              </DialogTitle>
+              <DialogDescription asChild>
+                <div className="p-6 flex items-center justify-center">
+                  <div className="space-y-4 [&_strong]:font-semibold [&_strong]:text-foreground">
+                    <p className="text-6xl">This is a card Dialog box</p>
+                  </div>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <DialogFooter className="border-t border-border px-6 py-4">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </DialogClose>
+            <DialogClose asChild>
+              <Button type="button">Okay</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <TooltipProvider delayDuration={0}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="disabled:opacity-100 absolute top-0 right-0 md:opacity-0 opacity-100 group-hover:opacity-100 px-4 z-50 mr-2 rounded-md text-sm transition-opacity duration-300 "
+              onClick={handleCopy}
+              aria-label={copied ? "Copied" : "Copy to clipboard"}
+              disabled={copied}
+            >
+              <div
+                className={cn(
+                  "transition-all",
+                  copied ? "scale-100 opacity-100" : "scale-0 opacity-0"
+                )}
+              >
+                <Check
+                  className="stroke-emerald-500"
+                  size={16}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+              </div>
+              <div
+                className={cn(
+                  "absolute transition-all",
+                  copied ? "scale-0 opacity-0" : "scale-100 opacity-100"
+                )}
+              >
+                <Copy size={16} strokeWidth={2} aria-hidden="true" />
+              </div>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="border border-input bg-popover px-2 py-1 text-xs text-muted-foreground">
+            Click to copy
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
+};
 import { ButtonWithCopy } from "./ButtonWithCopy";
 
 export default function Buttons() {
-  const [bgColor, setBgColor] = useState("#d4d4d4");
+  const [bgColor, setBgColor] = useState("#9e83c5");
   const [textColor, setTextColor] = useState("#000000");
+  const [isBgPickerOpen, setBgPickerOpen] = useState(false);
+  const [isTextPickerOpen, setTextPickerOpen] = useState(false);
   const [selectedLibrary, setSelectedLibrary] = useState("React.ts");
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -40,7 +157,10 @@ export default function Buttons() {
   const [open, setOpen] = useState<boolean>(false);
 
   const options = ["Active", "Inactive", "Pending"];
-
+  const bgPickerRef = useRef(null);
+  useOnClickOutside(bgPickerRef, () => setBgPickerOpen(false));
+  const textPickerRef = useRef(null);
+  useOnClickOutside(textPickerRef, () => setTextPickerOpen(false));
   const toggleExpand = () => {
     setIsExpanded7((prevState) => !prevState);
   };
@@ -1048,40 +1168,51 @@ export default function ButtonDemo() {
             </option>
           </select>
         </div>
+<div className="flex items-center justify-center gap-5">  
+        <div className="flex items-center gap-3">
+          {/* Label for Background Color */}
+          <label className="font-semibold text-sm">Background Color:</label>
 
-        {/* Background Color Picker */}
-        <div className="flex flex-row w-full gap-5 justify-end">
-          <div className="flex items-center gap-2">
-            <label
-              htmlFor="bgColor"
-              className="font-semibold text-sm text-gray-800 dark:text-gray-200"
-            >
-              Background Color:
-            </label>
-            <input
-              id="bgColor"
-              type="color"
-              className="h-8 w-8 rounded-lg border-none outline-none cursor-pointer transition-transform transform hover:scale-110"
-              onChange={(e) => setBgColor(e.target.value)}
-              value={bgColor}
-            />
-          </div>
+          {/* Background Color preview button */}
+          <div
+            className="w-12 h-10 rounded cursor-pointer border border-black dark:border-gray-300"
+            style={{ backgroundColor: bgColor }}
+            onClick={() => setBgPickerOpen(!isBgPickerOpen)}
+            ></div>
 
-          {/* Text Color Picker */}
-          <div className="flex items-center gap-2">
-            <label
-              htmlFor="textColor"
-              className="font-semibold text-sm text-gray-800 dark:text-gray-200"
+          {/* Popover for the Background Color Picker */}
+          {isBgPickerOpen && (
+            <div
+            ref={bgPickerRef}
+            className="absolute mt-2 z-10 bg-white p-2 shadow-lg rounded"
             >
-              Text Color:
-            </label>
-            <input
-              id="textColor"
-              type="color"
-              className="h-8 w-8 rounded-lg border-none outline-none cursor-pointer transition-transform transform hover:scale-110"
-              onChange={(e) => setTextColor(e.target.value)}
-              value={textColor}
-            />
+              <HexColorPicker color={bgColor} onChange={setBgColor} />
+              <p className="mt-1 text-center text-xs">{bgColor}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Label for Text Color */}
+          <label className="font-semibold text-sm">Text Color:</label>
+
+          {/* Text Color preview button */}
+          <div
+            className="w-12 h-10 rounded cursor-pointer border border-black dark:border-gray-300"
+            style={{ backgroundColor: textColor }}
+            onClick={() => setTextPickerOpen(!isTextPickerOpen)}
+            ></div>
+
+          {/* Popover for the Text Color Picker */}
+          {isTextPickerOpen && (
+            <div
+            ref={textPickerRef}
+            className="absolute mt-2 z-10 bg-white p-2 shadow-lg rounded"
+            >
+              <HexColorPicker color={textColor} onChange={setTextColor} />
+              <p className="mt-1 text-center text-xs">{textColor}</p>
+            </div>
+          )}
           </div>
         </div>
       </div>
